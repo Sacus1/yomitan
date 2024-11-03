@@ -156,6 +156,16 @@ type ApiSurface = {
         };
         return: Dictionary.KanjiDictionaryEntry[];
     };
+    numberFind: {
+        params: {
+            text: string;
+            optionsContext: Settings.OptionsContext;
+        };
+        return: {
+            number: number;
+            originalTextLength: number;
+        };
+    };
     isAnkiConnected: {
         params: void;
         return: boolean;

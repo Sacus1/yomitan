@@ -162,6 +162,12 @@
 <template id="kanji-reading-template"><dd class="kanji-reading"></dd></template>
 <!-- [html-validate-enable element-required-ancestor] -->
 
+<!-- Number entry  (just a text node)-->
+<template id="number-entry-template" data-remove-whitespace-text="true">
+    <div class="entry" data-type="number">
+    </div>
+</template>
+
 <!-- Tag -->
 <template id="tag-template"><span class="tag"><span class="tag-label"><span class="tag-label-content"></span></span></span></template>
 <template id="tag-with-body-template"><span class="tag tag-has-body"><span class="tag-label"><span class="tag-label-content"></span></span><span class="tag-body"><span class="tag-body-content"></span></span></span></template>

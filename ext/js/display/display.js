@@ -826,6 +826,10 @@ export class Display extends EventDispatcher {
                     this._contentType = type;
                     await this._setContentTermsOrKanji(type, urlSearchParams, token);
                     break;
+                case 'number':
+                    this._contentType = type;
+                    await this._setContentNumber(urlSearchParams, token);
+                    break;
                 case 'unloaded':
                     this._contentType = type;
                     this._setContentExtensionUnloaded();
@@ -1447,6 +1451,114 @@ export class Display extends EventDispatcher {
         performance.mark('display:contentUpdate:end');
         performance.measure('display:contentUpdate', 'display:contentUpdate:start', 'display:contentUpdate:end');
     }
+
+    /**
+     * @param {URLSearchParams} urlSearchParams
+     * @param {import('core').TokenObject} token
+     */
+    async _setContentNumber(urlSearchParams, token) {
+        // Set query
+        performance.mark('display:setQuery:start');
+        let query = urlSearchParams.get('query');
+        if (query === null) { query = ''; }
+        let queryFull = urlSearchParams.get('full');
+        queryFull = (queryFull !== null ? queryFull : query);
+        const queryOffsetString = urlSearchParams.get('offset');
+        let queryOffset = 0;
+        if (queryOffsetString !== null) {
+            queryOffset = Number.parseInt(queryOffsetString, 10);
+            queryOffset = Number.isFinite(queryOffset) ? Math.max(0, Math.min(queryFull.length - query.length, queryOffset)) : 0;
+        }
+        this._setQuery(query, queryFull, queryOffset);
+        performance.mark('display:setQuery:end');
+        performance.measure('display:setQuery', 'display:setQuery:start', 'display:setQuery:end');
+
+        let {state, content} = this._history;
+        let changeHistory = false;
+        if (!(typeof content === 'object' && content !== null)) {
+            content = {};
+            changeHistory = true;
+        }
+        if (!(typeof state === 'object' && state !== null)) {
+            state = {};
+            changeHistory = true;
+        }
+
+        let {focusEntry, scrollX, scrollY, optionsContext} = state;
+        if (typeof focusEntry !== 'number') { focusEntry = 0; }
+        if (!(typeof optionsContext === 'object' && optionsContext !== null)) {
+            optionsContext = this.getOptionsContext();
+            state.optionsContext = optionsContext;
+            changeHistory = true;
+        }
+
+        const {number} = content;
+
+        let contentOriginValid = false;
+        const {contentOrigin} = content;
+        if (typeof contentOrigin === 'object' && contentOrigin !== null) {
+            const {tabId, frameId} = contentOrigin;
+            if (tabId !== null && frameId !== null) {
+                this._contentOriginTabId = tabId;
+                this._contentOriginFrameId = frameId;
+                contentOriginValid = true;
+            }
+        }
+        if (!contentOriginValid) {
+            content.contentOrigin = this.getContentOrigin();
+            changeHistory = true;
+        }
+
+        await this._setOptionsContextIfDifferent(optionsContext);
+        if (this._setContentToken !== token) { return; }
+
+        if (this._options === null) {
+            await this.updateOptions();
+            if (this._setContentToken !== token) { return; }
+        }
+
+        if (changeHistory) {
+            this._replaceHistoryStateNoNavigate(state, content);
+        }
+
+        this._updateNavigationAuto();
+        this._setNoContentVisible(false);
+
+        const container = this._container;
+        container.textContent = '';
+
+        performance.mark('display:contentUpdate:start');
+        this._triggerContentUpdateStart();
+
+        performance.mark('display:createEntry:start');
+
+        if (typeof number !== 'undefined') {
+            const entry = this._displayGenerator.createNumberEntry(number);
+            entry.dataset.index = `${0}`;
+            this._dictionaryEntryNodes.push(entry);
+            this._addEntryEventListeners(entry);
+            this._triggerContentUpdateEntry(number, entry, 0);
+            container.appendChild(entry);
+        }
+
+        // this._elementOverflowController.addElements(entry);
+
+        performance.mark('display:createEntry:end');
+        performance.measure('display:createEntry', 'display:createEntry:start', 'display:createEntry:end');
+
+        if (typeof scrollX === 'number' || typeof scrollY === 'number') {
+            let {x, y} = this._windowScroll;
+            if (typeof scrollX === 'number') { x = scrollX; }
+            if (typeof scrollY === 'number') { y = scrollY; }
+            this._windowScroll.stop();
+            this._windowScroll.to(x, y);
+        }
+
+        this._triggerContentUpdateComplete();
+        performance.mark('display:contentUpdate:end');
+        performance.measure('display:contentUpdate', 'display:contentUpdate:start', 'display:contentUpdate:end');
+    }
+
 
     /** */
     _setContentExtensionUnloaded() {

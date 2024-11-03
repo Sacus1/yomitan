@@ -195,6 +195,16 @@ export class DisplayGenerator {
     }
 
     /**
+     * @param {number} number
+     * @returns {HTMLElement}
+     */
+    createNumberEntry(number) {
+        const node = this._instantiate('number-entry');
+        this._setTextContent(node, `${number}`, this._language);
+        return node;
+    }
+
+    /**
      * @returns {HTMLElement}
      */
     createEmptyFooterNotification() {

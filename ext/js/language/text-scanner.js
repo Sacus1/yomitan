@@ -497,18 +497,20 @@ export class TextScanner extends EventDispatcher {
             let dictionaryEntries = null;
             /** @type {?import('display').HistoryStateSentence} */
             let sentence = null;
-            /** @type {'terms'|'kanji'} */
+            /** @type {'terms'|'kanji'|'number'} */
             let type = 'terms';
+            /** @type {?number} */
+            let number = null;
             const result = await this._findDictionaryEntries(textSource, searchTerms, searchKanji, optionsContext);
             if (result !== null) {
-                ({dictionaryEntries, sentence, type} = result);
+                ({number, dictionaryEntries, sentence, type} = result);
             } else if (showEmpty || (textSource !== null && isAltText && await this._isTextLookupWorthy(textSource.fullContent))) {
                 // Shows a "No results found" message
                 dictionaryEntries = [];
                 sentence = {text: '', offset: 0};
             }
 
-            if (dictionaryEntries !== null && sentence !== null) {
+            if (!dictionaryEntries && sentence !== null) {
                 this._inputInfoCurrent = inputInfo;
                 this.setCurrentTextSource(textSource);
                 this._selectionRestoreInfo = selectionRestoreInfo;
@@ -519,7 +521,27 @@ export class TextScanner extends EventDispatcher {
 
                 this.trigger('searchSuccess', {
                     type,
+                    number,
                     dictionaryEntries,
+                    sentence,
+                    inputInfo,
+                    textSource,
+                    optionsContext,
+                    detail,
+                    pageTheme,
+                });
+            } else if (number !== null) {
+                this._inputInfoCurrent = inputInfo;
+                this.setCurrentTextSource(textSource);
+                this._selectionRestoreInfo = selectionRestoreInfo;
+
+                /** @type {ThemeController} */
+                this._themeController = new ThemeController(document.documentElement);
+                const pageTheme = this._themeController.computeSiteTheme();
+
+                this.trigger('searchSuccess', {
+                    type,
+                    number,
                     sentence,
                     inputInfo,
                     textSource,
@@ -1224,6 +1246,10 @@ export class TextScanner extends EventDispatcher {
         if (textSource === null) {
             return null;
         }
+        if (!searchKanji && !searchKanji) {
+            const results = await this._findNumberDictionaryEntries(textSource, optionsContext);
+            if (results !== null) { return results; }
+        }
         if (searchTerms) {
             const results = await this._findTermDictionaryEntries(textSource, optionsContext);
             if (results !== null) { return results; }
@@ -1233,6 +1259,39 @@ export class TextScanner extends EventDispatcher {
             if (results !== null) { return results; }
         }
         return null;
+    }
+
+    /**
+     * @param {import('text-source').TextSource} textSource
+     * @param {import('settings').OptionsContext} optionsContext
+     * @returns {Promise<?import('text-scanner').NumberSearchResults>}
+     */
+    async _findNumberDictionaryEntries(textSource, optionsContext) {
+        const scanLength = this._scanLength;
+        const sentenceScanExtent = this._sentenceScanExtent;
+        const sentenceTerminateAtNewlines = this._sentenceTerminateAtNewlines;
+        const sentenceTerminatorMap = this._sentenceTerminatorMap;
+        const sentenceForwardQuoteMap = this._sentenceForwardQuoteMap;
+        const sentenceBackwardQuoteMap = this._sentenceBackwardQuoteMap;
+        const layoutAwareScan = this._layoutAwareScan;
+        const searchText = this.getTextSourceContent(textSource, scanLength, layoutAwareScan, optionsContext.pointerType);
+        if (searchText.length === 0) { return null; }
+
+        /** @type {import('api').FindTermsDetails} */
+        const details = {};
+        const {number, originalTextLength} = await this._api.numberFind(searchText, details, optionsContext);
+        textSource.setEndOffset(originalTextLength, false, layoutAwareScan);
+        const sentence = this._textSourceGenerator.extractSentence(
+            textSource,
+            layoutAwareScan,
+            sentenceScanExtent,
+            sentenceTerminateAtNewlines,
+            sentenceTerminatorMap,
+            sentenceForwardQuoteMap,
+            sentenceBackwardQuoteMap,
+        );
+
+        return {number, sentence, type: 'number'};
     }
 
     /**

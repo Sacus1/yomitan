@@ -65,6 +65,15 @@ export class API {
     }
 
     /**
+     * @param {import('api').ApiParam<'numberFind', 'text'>} text
+     * @param {import('api').ApiParam<'numberFind', 'optionsContext'>} optionsContext
+     * @returns {Promise<import('api').ApiReturn<'numberFind'>>}
+     */
+    numberFind(text, optionsContext) {
+        return this._invoke('numberFind', {text, optionsContext});
+    }
+
+    /**
      * @param {import('api').ApiParam<'kanjiFind', 'text'>} text
      * @param {import('api').ApiParam<'kanjiFind', 'optionsContext'>} optionsContext
      * @returns {Promise<import('api').ApiReturn<'kanjiFind'>>}

@@ -117,8 +117,9 @@ export type Events = {
         reason: ClearReason;
     };
     searchSuccess: {
-        type: 'terms' | 'kanji';
-        dictionaryEntries: Dictionary.DictionaryEntry[];
+        type: 'terms' | 'kanji' | 'number';
+        number: number;
+        dictionaryEntries: Dictionary.DictionaryEntry[] | null;
         sentence: Display.HistoryStateSentence;
         inputInfo: InputInfo;
         textSource: TextSource.TextSource;
@@ -166,6 +167,12 @@ export type SelectionRestoreInfo = {
     ranges: Range[];
 };
 
+export type NumberSearchResults = {
+    type: 'number';
+    number: number;
+    sentence: Sentence;
+};
+
 export type TermSearchResults = {
     type: 'terms';
     dictionaryEntries: Dictionary.TermDictionaryEntry[];
@@ -178,7 +185,7 @@ export type KanjiSearchResults = {
     sentence: Sentence;
 };
 
-export type SearchResults = TermSearchResults | KanjiSearchResults;
+export type SearchResults = TermSearchResults | KanjiSearchResults | NumberSearchResults;
 
 export type Sentence = {
     text: string;

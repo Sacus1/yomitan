@@ -147,6 +147,7 @@ export class Backend {
             ['requestBackendReadySignal',    this._onApiRequestBackendReadySignal.bind(this)],
             ['optionsGet',                   this._onApiOptionsGet.bind(this)],
             ['optionsGetFull',               this._onApiOptionsGetFull.bind(this)],
+            ['numberFind',                   this._onApiNumberFind.bind(this)],
             ['kanjiFind',                    this._onApiKanjiFind.bind(this)],
             ['termsFind',                    this._onApiTermsFind.bind(this)],
             ['parseText',                    this._onApiParseText.bind(this)],
@@ -473,6 +474,69 @@ export class Backend {
     /** @type {import('api').ApiHandler<'optionsGetFull'>} */
     _onApiOptionsGetFull() {
         return this._getOptionsFull(false);
+    }
+
+    /** @type {import('api').ApiHandler<'kanjiFind'>} */
+    async _onApiNumberFind({text, _}) {
+        const kanjiDigits = {
+            零: 0,
+            〇: 0,
+            一: 1,
+            二: 2,
+            三: 3,
+            四: 4,
+            五: 5,
+            六: 6,
+            七: 7,
+            八: 8,
+            九: 9,
+        };
+        const kanjiUnits = {
+            十: 10,
+            百: 100,
+            千: 1000,
+        };
+        const kanjiBigUnits = {
+            万: 10000,
+            億: 100000000,
+            兆: 1000000000000,
+        };
+        /** @type {number} */
+        let total = 0;
+        /** @type {number} */
+        let sectionTotal = 0;
+        /** @type {number} */
+        let tempNumber = 0;
+        /** @type {number} */
+        let numberOfChar = 0;
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            numberOfChar++;
+            if (char >= '0' && char <= '9') {
+                tempNumber = Number.parseInt(char, 10);
+            } else if (Object.prototype.hasOwnProperty.call(kanjiDigits, char)) {
+                tempNumber = kanjiDigits[char];
+            } else if (Object.prototype.hasOwnProperty.call(kanjiUnits, char)) {
+                const unitValue = kanjiUnits[char];
+                if (tempNumber === 0) { tempNumber = 1; }
+                sectionTotal += tempNumber * unitValue;
+                tempNumber = 0;
+            } else if (Object.prototype.hasOwnProperty.call(kanjiBigUnits, char)) {
+                const bigUnitValue = kanjiBigUnits[char];
+                if (tempNumber === 0 && sectionTotal === 0) {
+                    sectionTotal = 1;
+                }
+                total += (sectionTotal + tempNumber) * bigUnitValue;
+                sectionTotal = 0;
+                tempNumber = 0;
+            } else {
+                break;
+            }
+        }
+
+        total += sectionTotal + tempNumber;
+
+        return {number: total, originalTextLength: numberOfChar-1};
     }
 
     /** @type {import('api').ApiHandler<'kanjiFind'>} */

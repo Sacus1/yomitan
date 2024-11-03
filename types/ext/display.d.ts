@@ -35,7 +35,7 @@ export type HistoryMode = 'clear' | 'overwrite' | 'new';
 
 export type DisplayPageType = 'search' | 'popup';
 
-export type PageType = 'terms' | 'kanji' | 'unloaded' | 'clear';
+export type PageType = 'terms' | 'kanji' | 'number' | 'unloaded' | 'clear';
 
 /**
  * Information about how popup content should be shown, specifically related to the inner popup content.
@@ -117,8 +117,11 @@ export type HistoryContent = {
     animate?: boolean;
     /** An array of dictionary entries to display as content. */
     dictionaryEntries?: Dictionary.DictionaryEntry[];
+    /** Alternative to `dictionaryEntries` for when the content is not a dictionary entry. */
+    number?: number;
     /** The identifying information for the frame the content originated from. */
     contentOrigin?: Extension.ContentOrigin;
+
 };
 
 export type SearchMode = null | 'popup' | 'action-popup';
